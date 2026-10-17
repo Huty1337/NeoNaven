@@ -39,7 +39,7 @@ import net.minecraft.world.item.PotionItem;
    description = "NoSlowDown",
    category = Category.MOVEMENT
 )
-public class NoSlow extends Module {
+public class NoSlow extends Module { //sh1t
    private final FullMode fullMode = new FullMode();
    private final LegacyMode legacyMode = new LegacyMode();
 
