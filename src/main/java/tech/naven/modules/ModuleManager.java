@@ -13,7 +13,7 @@ import tech.naven.modules.impl.combat.AutoThrow;
 import tech.naven.modules.impl.combat.AutoClicker;
 import tech.naven.modules.impl.combat.Criticals;
 import tech.naven.modules.impl.combat.GhostHand;
-import tech.naven.modules.impl.combat.MidPearl;
+import tech.naven.modules.impl.misc.MidPearl;
 import tech.naven.modules.impl.combat.Velocity;
 import tech.naven.modules.impl.misc.AntiFireball;
 import tech.naven.modules.impl.misc.AutoTools;
