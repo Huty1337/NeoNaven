@@ -43,7 +43,7 @@ public class PearlPrediction extends Module {
    public static Vector2f rotations;
    public static boolean isThrowing;
 
-   private final FloatValue hudSize = ValueBuilder.create(this, "HUD Size")
+   private final FloatValue scale = ValueBuilder.create(this, "Scale")
       .setDefaultFloatValue(0.35F)
       .setFloatStep(0.01F)
       .setMinFloatValue(0.1F)
@@ -252,13 +252,13 @@ public class PearlPrediction extends Module {
       );
 
       float textY = info.finalY + 2.0F;
-      float rowHeight = (float)Fonts.harmony.getHeight(true, this.hudSize.getCurrentValue());
+      float rowHeight = (float)Fonts.harmony.getHeight(true, this.scale.getCurrentValue());
       Fonts.harmony.setAlpha(1.0F);
 
       for (String line : info.lines) {
-         float textXOffset = (info.finalWidth - Fonts.harmony.getWidth(line, this.hudSize.getCurrentValue())) / 2.0F;
+         float textXOffset = (info.finalWidth - Fonts.harmony.getWidth(line, this.scale.getCurrentValue())) / 2.0F;
          Fonts.harmony.render(
-            guiGraphics, line, info.finalX + textXOffset, textY, Color.WHITE, true, this.hudSize.getCurrentValue()
+            guiGraphics, line, info.finalX + textXOffset, textY, Color.WHITE, true, this.scale.getCurrentValue()
          );
          textY += rowHeight * 0.875F;
       }
@@ -330,12 +330,12 @@ public class PearlPrediction extends Module {
             )
          );
 
-         float textHeight = (float)Fonts.harmony.getHeight(true, hudSize.getCurrentValue());
+         float textHeight = (float)Fonts.harmony.getHeight(true, scale.getCurrentValue());
          this.totalTextHeight = textHeight * 0.875F * (float)(this.lines.size() - 1) + textHeight;
 
          float width = 0.0F;
          for (String line : this.lines) {
-            width = Math.max(width, Fonts.harmony.getWidth(line, hudSize.getCurrentValue()));
+            width = Math.max(width, Fonts.harmony.getWidth(line, scale.getCurrentValue()));
          }
 
          this.finalWidth = width + 8.0F;
