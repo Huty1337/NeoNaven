@@ -115,7 +115,7 @@ public class Scaffold extends Module {
 
    public ModeValue mode = ValueBuilder.create(this, "Mode")
       .setDefaultModeIndex(0)
-      .setModes("Normal", "Telly Bridge", "Keep Y")
+      .setModes("Normal", "Telly Bridge")
       .build()
       .getModeValue();
    FloatValue tellyTicks = ValueBuilder.create(this, "Telly Ticks")
@@ -134,26 +134,6 @@ public class Scaffold extends Module {
       .setVisibility(() -> this.mode.isCurrentMode("Telly Bridge"))
       .build()
       .getFloatValue();
-   public BooleanValue eagle = ValueBuilder.create(this, "Eagle")
-      .setDefaultBooleanValue(true)
-      .setVisibility(() -> this.mode.isCurrentMode("Normal"))
-      .build()
-      .getBooleanValue();
-   public BooleanValue sneak = ValueBuilder.create(this, "Sneak")
-      .setDefaultBooleanValue(false)
-      .setVisibility(() -> this.mode.isCurrentMode("Normal"))
-      .build()
-      .getBooleanValue();
-   public BooleanValue snap = ValueBuilder.create(this, "Snap")
-      .setDefaultBooleanValue(true)
-      .setVisibility(() -> this.mode.isCurrentMode("Normal"))
-      .build()
-      .getBooleanValue();
-   public BooleanValue hideSnap = ValueBuilder.create(this, "Hide Snap Rotation")
-      .setDefaultBooleanValue(true)
-      .setVisibility(() -> this.mode.isCurrentMode("Normal") && this.snap.getCurrentValue())
-      .build()
-      .getBooleanValue();
    public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
    public BooleanValue onTickRot = ValueBuilder.create(this, "On Tick Rotation").setDefaultBooleanValue(false).build().getBooleanValue();
    FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
@@ -590,27 +570,6 @@ public class Scaffold extends Module {
                this.rots.setX(mc.player.getYRot());
                this.lastRots.set(this.rots.getX(), this.rots.getY());
                return;
-            }
-         } else if (this.mode.isCurrentMode("Keep Y")) {
-            mc.options.keyJump.setDown(PlayerUtils.movementInput() || jumpHeld);
-         } else {
-            if (this.eagle.getCurrentValue()) {
-               mc.options.keyShift.setDown(mc.player.onGround() && isOnBlockEdge(0.3F));
-            }
-
-            if (this.sneak.getCurrentValue()) {
-               this.lastSneakTicks++;
-               if (this.lastSneakTicks == 18) {
-                  if (mc.player.isSprinting()) {
-                     mc.options.keySprint.setDown(false);
-                     mc.player.setSprinting(false);
-                  }
-
-                  mc.options.keyShift.setDown(true);
-               } else if (this.lastSneakTicks >= 21) {
-                  mc.options.keyShift.setDown(false);
-                  this.lastSneakTicks = 0;
-               }
             }
          }
       }

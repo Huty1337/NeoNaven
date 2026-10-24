@@ -106,12 +106,7 @@ public class RotationManager {
             e.setPitch(pitch);
          }
 
-         Scaffold scaffold = (Scaffold)Naven.getInstance().getModuleManager().getModule(Scaffold.class);
-         if (scaffold.isEnabled() && scaffold.mode.isCurrentMode("Normal") && scaffold.snap.getCurrentValue() && scaffold.hideSnap.getCurrentValue()) {
-            animationRotation = scaffold.correctRotation;
-         } else {
             animationRotation = new Vector2f(e.getYaw(), e.getPitch());
-         }
 
          lastRotations = new Vector2f(e.getYaw(), e.getPitch());
       }
