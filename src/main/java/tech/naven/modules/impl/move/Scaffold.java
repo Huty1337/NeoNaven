@@ -135,7 +135,7 @@ public class Scaffold extends Module {
       .build()
       .getFloatValue();
    public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
-   public BooleanValue onTickRot = ValueBuilder.create(this, "On Tick Rotation").setDefaultBooleanValue(false).build().getBooleanValue();
+   public BooleanValue onTickRot = ValueBuilder.create(this, "On Tick").setDefaultBooleanValue(false).build().getBooleanValue();
    FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
       .setDefaultFloatValue(180.0F)
       .setFloatStep(5.0F)
