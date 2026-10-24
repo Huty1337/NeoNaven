@@ -21,7 +21,6 @@ import net.minecraft.world.item.Items;
    category = Category.MISC
 )
 public class MidPearl extends Module {
-   private final TimeHelper timer = new TimeHelper();
    private boolean doWork;
    private boolean switchBack;
    private int lastSlot = -1;
@@ -31,7 +30,6 @@ public class MidPearl extends Module {
       this.lastSlot = -1;
       this.doWork = false;
       this.switchBack = false;
-      this.timer.reset();
    }
 
    @Override
@@ -56,7 +54,6 @@ public class MidPearl extends Module {
       }
 
       if (mc.options.keyPickItem.isDown()) {
-         this.timer.reset();
          this.doWork = true;
          this.switchBack = false;
       }
@@ -68,7 +65,6 @@ public class MidPearl extends Module {
             mc.player.getInventory().setSelectedSlot(pearlSlot);
             ((MultiPlayerGameModeAccessor)mc.gameMode).invokeEnsureHasSentCarriedItem();
             mc.gameMode.useItem(mc.player, InteractionHand.MAIN_HAND);
-            this.timer.reset();
             this.doWork = false;
             this.switchBack = true;
          }
