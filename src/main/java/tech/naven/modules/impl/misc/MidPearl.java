@@ -1,4 +1,4 @@
-package tech.naven.modules.impl.combat;
+package tech.naven.modules.impl.misc;
 
 import tech.mixin.accessors.MultiPlayerGameModeAccessor;
 import tech.naven.events.api.EventTarget;
@@ -18,23 +18,9 @@ import net.minecraft.world.item.Items;
 @ModuleInfo(
    name = "MidPearl",
    description = "Middle-click to throw an ender pearl",
-   category = Category.COMBAT
+   category = Category.MISC
 )
 public class MidPearl extends Module {
-   private final FloatValue minDelay = ValueBuilder.create(this, "Min Switch Delay")
-      .setDefaultFloatValue(0.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(1000.0F)
-      .setFloatStep(50.0F)
-      .build()
-      .getFloatValue();
-   private final FloatValue maxDelay = ValueBuilder.create(this, "Max Switch Delay")
-      .setDefaultFloatValue(5.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(1000.0F)
-      .setFloatStep(50.0F)
-      .build()
-      .getFloatValue();
    private final TimeHelper timer = new TimeHelper();
    private boolean doWork;
    private boolean switchBack;
@@ -75,7 +61,7 @@ public class MidPearl extends Module {
          this.switchBack = false;
       }
 
-      if (this.doWork && this.timer.delay(this.randomDelay())) {
+      if (this.doWork) {
          int pearlSlot = this.findPearlSlot();
          if (pearlSlot != -1) {
             this.lastSlot = mc.player.getInventory().getSelectedSlot();
@@ -88,23 +74,13 @@ public class MidPearl extends Module {
          }
       }
 
-      if (this.switchBack && this.timer.delay(this.randomDelay())) {
+      if (this.switchBack) {
          if (this.lastSlot >= 0) {
             mc.player.getInventory().setSelectedSlot(this.lastSlot);
          }
 
          this.switchBack = false;
       }
-   }
-
-   private double randomDelay() {
-      float min = this.minDelay.getCurrentValue();
-      float max = this.maxDelay.getCurrentValue();
-      if (max < min) {
-         max = min;
-      }
-
-      return MathUtils.getRandomDoubleInRange((double)min, (double)max);
    }
 
    private int findPearlSlot() {
@@ -118,7 +94,6 @@ public class MidPearl extends Module {
             return i;
          }
       }
-
       return -1;
    }
 }

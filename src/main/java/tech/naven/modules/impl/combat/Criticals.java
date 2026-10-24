@@ -24,14 +24,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
    category = Category.COMBAT
 )
 public class Criticals extends Module {
-   FloatValue range = ValueBuilder.create(this, "Critical Range")
-      .setDefaultFloatValue(3.0F)
-      .setFloatStep(0.1F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(3.2F)
-      .build()
-      .getFloatValue();
-
    private final BooleanValue skipTicksOption = ValueBuilder.create(this, "SkipTicks")
       .setDefaultBooleanValue(true)
       .build()
@@ -78,7 +70,7 @@ public class Criticals extends Module {
 
       if (mc.player.getDeltaMovement().y < 0.0
          && !mc.player.onGround()
-         && mc.player.distanceTo(target) <= this.range.getCurrentValue()) {
+         && mc.player.distanceTo(target) <= 3.0F) {
          this.forceCancelSprint();
       }
    }
@@ -108,7 +100,7 @@ public class Criticals extends Module {
                && !mc.player.onGround()
                && aura != null
                && aura.isEnabled()
-               && mc.player.distanceTo(Aura.target) <= this.range.getCurrentValue()) {
+               && mc.player.distanceTo(Aura.target) <= 3.0F) {
                if (this.skipTicksOption.getCurrentValue() && Naven.skipTicks <= 0) {
                   Naven.skipTicks++;
                   this.usedSkipTicks = true;
@@ -144,7 +136,7 @@ public class Criticals extends Module {
          && aura.isEnabled()
          && mc.player.getDeltaMovement().y < 0.0
          && !mc.player.onGround()
-         && mc.player.distanceTo(Aura.target) <= this.range.getCurrentValue()) {
+         && mc.player.distanceTo(Aura.target) <= 3.0F) {
          this.forceCancelSprint();
       }
 

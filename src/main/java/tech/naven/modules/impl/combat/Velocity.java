@@ -56,7 +56,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 )
 public class Velocity extends Module {
    LinkedBlockingDeque<Packet<ClientGamePacketListener>> inBound = new LinkedBlockingDeque<>();
-   public static Velocity.Stage stage = Velocity.Stage.IDLE;
    public FloatValue attackAmount = ValueBuilder.create(this, "Attack Amount")
       .setDefaultFloatValue(5.0F)
       .setFloatStep(1.0F)
@@ -67,25 +66,14 @@ public class Velocity extends Module {
    public FloatValue maxDelayTicks = ValueBuilder.create(this, "Max Delay Ticks")
       .setDefaultFloatValue(10.0F)
       .setFloatStep(1.0F)
-      .setMinFloatValue(1.0F)
-      .setMaxFloatValue(120.0F)
+      .setMinFloatValue(0.0F)
+      .setMaxFloatValue(40.0F)
       .build()
       .getFloatValue();
-   public BooleanValue autoForwards = ValueBuilder.create(this, "Auto Forwards")
-      .setDefaultBooleanValue(false)
-      .build()
-      .getBooleanValue();
-   public BooleanValue requireKillAura = ValueBuilder.create(this, "Require KillAura")
-      .setDefaultBooleanValue(true)
-      .build()
-      .getBooleanValue();
    public BooleanValue jumpReset = ValueBuilder.create(this, "Jump Reset")
       .setDefaultBooleanValue(false)
       .build()
       .getBooleanValue();
-   Packet velocityPacket;
-   private BlockHitResult result = null;
-   Scaffold.BlockPosWithFacing pos;
 
    public void processPackets() {
       ClientPacketListener connection = mc.getConnection();
@@ -121,13 +109,6 @@ public class Velocity extends Module {
    @EventTarget
    public void onPacket(EventHandlePacket e) {
       this.onReceivePacket(e);
-   }
-
-   public static enum Stage {
-      TRANSACTION,
-      ROTATION,
-      BLOCK,
-      IDLE;
    }
 
    private final Queue<Packet<ClientGamePacketListener>> packetQueue = new ConcurrentLinkedQueue<>();
@@ -188,7 +169,7 @@ public class Velocity extends Module {
 
       this.tickJumpReset();
 
-      this.target = this.requireKillAura.getCurrentValue() ? this.auraOrFallbackTarget() : this.crosshairTarget();
+      this.target = this.auraOrFallbackTarget();
 
       if (this.compensateUntilMs != -1L && (System.currentTimeMillis() >= this.compensateUntilMs || mc.options.keyUp.isDown())) {
          this.compensating = false;
@@ -322,7 +303,7 @@ public class Velocity extends Module {
          return;
       }
 
-      if (this.compensating && this.autoForwards.getCurrentValue()) {
+      if (this.compensating) {
          event.setForward(1.0F);
       }
    }
@@ -370,9 +351,6 @@ public class Velocity extends Module {
          return false;
       }
 
-      if (!this.requireKillAura.getCurrentValue()) {
-         return mc.hitResult instanceof EntityHitResult hit && hit.getEntity() == this.target;
-      }
 
       Vector2f aim = RotationManager.active && RotationManager.rotations != null
               ? RotationManager.rotations
@@ -487,7 +465,6 @@ public class Velocity extends Module {
       this.target = null;
       this.handlingVelocity = false;
       if (mc.getConnection() != null) {
-         stage = Velocity.Stage.IDLE;
          this.processPackets();
       }
    }
