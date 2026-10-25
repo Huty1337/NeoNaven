@@ -22,6 +22,7 @@ import tech.naven.utils.PlayerUtils;
 import tech.naven.utils.RayTraceUtils;
 import tech.naven.utils.Vector2f;
 import tech.naven.utils.rotation.Rotation;
+import tech.naven.utils.rotation.RotationUtils;
 import tech.naven.values.ValueBuilder;
 import tech.naven.values.impl.BooleanValue;
 import tech.naven.values.impl.FloatValue;
@@ -30,7 +31,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -137,10 +137,10 @@ public class Scaffold extends Module {
    public BooleanValue renderItemSpoof = ValueBuilder.create(this, "Render Item Spoof").setDefaultBooleanValue(true).build().getBooleanValue();
    public BooleanValue onTickRot = ValueBuilder.create(this, "On Tick").setDefaultBooleanValue(false).build().getBooleanValue();
    FloatValue rotationSpeed = ValueBuilder.create(this, "Rotation Speed")
-      .setDefaultFloatValue(180.0F)
-      .setFloatStep(5.0F)
-      .setMinFloatValue(0.0F)
-      .setMaxFloatValue(360.0F)
+      .setDefaultFloatValue(60.0F)
+      .setFloatStep(1.0F)
+      .setMinFloatValue(30.0F)
+      .setMaxFloatValue(180.0F)
       .build()
       .getFloatValue();
    FloatValue bps = ValueBuilder.create(this, "BPS")
@@ -160,7 +160,6 @@ public class Scaffold extends Module {
       .build()
       .getFloatValue();
 
-   private final RotationSmoother rotSmoother = new RotationSmoother(new Random());
    private final List<Runnable> pendingTicks = new ArrayList<>();
    private final Vector2f lastSentRot = new Vector2f();
 
@@ -171,6 +170,7 @@ public class Scaffold extends Module {
    private int slotTicks;
    private BlockPosWithFacing pos;
    private int airTicks;
+   private int onGroundTicks;
    private int rotationDelay;
    private int velocityDelay;
    private int tellyPlaceDelayTimer;
@@ -182,6 +182,7 @@ public class Scaffold extends Module {
    private String aimBranch = "none";
    private boolean usedSkipTicks;
    private double lastHorizontalSpeed;
+   private int lastPlaceTick = -100;
 
    public static boolean isValidStack(ItemStack stack) {
       if (stack == null || !(stack.getItem() instanceof BlockItem) || stack.getCount() <= 1) {
@@ -252,6 +253,7 @@ public class Scaffold extends Module {
          this.slotActiveTick = 0;
          this.slotTicks = 0;
          this.rots.set(mc.player.getYRot() - 180.0F, mc.player.getXRot());
+         this.correctRotation.set(this.rots.getX(), this.rots.getY());
          this.lastRots.set(mc.player.yRotO - 180.0F, mc.player.xRotO);
          this.lastSentRot.set(mc.player.getYRot(), mc.player.getXRot());
          this.pos = null;
@@ -262,7 +264,6 @@ public class Scaffold extends Module {
          this.lastC05Position = null;
          this.airTicks = 0;
          this.tellyPlaceDelayTimer = 0;
-         this.rotSmoother.reset();
       }
 
       this.pendingTicks.clear();
@@ -285,7 +286,6 @@ public class Scaffold extends Module {
 
       this.canBuildNow = true;
       this.lastC05Position = null;
-      this.rotSmoother.reset();
    }
 
    @EventTarget
@@ -344,8 +344,10 @@ public class Scaffold extends Module {
       if (e.getType() == EventType.POST) {
          if (mc.player.onGround()) {
             this.airTicks = 0;
+            this.onGroundTicks++;
          } else {
             this.airTicks++;
+            this.onGroundTicks = 0;
          }
 
          return;
@@ -369,23 +371,11 @@ public class Scaffold extends Module {
             return;
          }
 
-         if (this.mode.isCurrentMode("Telly Bridge")
-            && (int)this.tellyPlaceDelay.getCurrentValue() > 0
-            && this.tellyPlaceDelayTimer < (int)this.tellyPlaceDelay.getCurrentValue()) {
-            return;
-         }
-
          this.c06Place();
          return;
       }
 
       if (this.mode.isCurrentMode("Telly Bridge") && this.airTicks < (int)this.tellyTicks.getCurrentValue()) {
-         return;
-      }
-
-      if (this.mode.isCurrentMode("Telly Bridge")
-         && (int)this.tellyPlaceDelay.getCurrentValue() > 0
-         && this.tellyPlaceDelayTimer < (int)this.tellyPlaceDelay.getCurrentValue()) {
          return;
       }
 
@@ -406,6 +396,7 @@ public class Scaffold extends Module {
          return;
       }
 
+      RayTraceUtils.updateEyePos();
       if (!this.pendingTicks.isEmpty()) {
          List<Runnable> tasks = new ArrayList<>(this.pendingTicks);
          this.pendingTicks.clear();
@@ -509,6 +500,7 @@ public class Scaffold extends Module {
          if (useC06) {
             this.aimBranch = "C06-real-cam";
             this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+            this.correctRotation.set(this.rots.getX(), this.rots.getY());
             this.logLargeDelta(this.rots);
             this.rotationDelay++;
          } else {
@@ -520,6 +512,7 @@ public class Scaffold extends Module {
             );
             Rotation rotationToBlock = new Rotation(predictedEye, targetVec);
             this.rots.set(rotationToBlock.getYaw(), rotationToBlock.getPitch());
+            this.correctRotation.set(this.rots.getX(), this.rots.getY());
             this.rotationDelay++;
             this.pendingTicks.add(() -> {
                float yaw = rotationToBlock.getYaw();
@@ -559,6 +552,7 @@ public class Scaffold extends Module {
          if (this.onTickRot.getCurrentValue()) {
             this.aimBranch = "C06-real-cam";
             this.rots.set(mc.player.getYRot(), mc.player.getXRot());
+            this.correctRotation.set(this.rots.getX(), this.rots.getY());
             this.logLargeDelta(this.rots);
          } else {
             this.calculateTargetRotation();
@@ -566,8 +560,14 @@ public class Scaffold extends Module {
 
          if (this.mode.isCurrentMode("Telly Bridge")) {
             mc.options.keyJump.setDown(PlayerUtils.movementInput() || jumpHeld);
+            if (this.onGroundTicks == 1) {
+               this.rots.setY(75.5F);
+               this.correctRotation.setY(75.5F);
+            }
+
             if (this.airTicks < (int)this.tellyTicks.getCurrentValue() && PlayerUtils.movementInput()) {
                this.rots.setX(mc.player.getYRot());
+               this.correctRotation.setX(mc.player.getYRot());
                this.lastRots.set(this.rots.getX(), this.rots.getY());
                return;
             }
@@ -715,16 +715,11 @@ public class Scaffold extends Module {
    }
 
    private boolean isRotationValidForPlacement(Vector2f rotation) {
-      if (this.pos == null || rotation == null) {
+      if (this.pos == null || rotation == null || mc.player == null) {
          return false;
       }
 
-      HitResult result = RayTraceUtils.rayCast(1.0F, rotation);
-      if (!(result instanceof BlockHitResult hit)) {
-         return false;
-      }
-
-      return hit.getBlockPos().equals(this.pos.position()) && hit.getDirection() == this.pos.facing();
+      return RayTraceUtils.didHitBlockFace(mc.player, rotation.getX(), rotation.getY(), this.pos.position(), this.pos.facing(), true);
    }
 
    private boolean isPlacementReachable() {
@@ -773,8 +768,7 @@ public class Scaffold extends Module {
 
       float yaw = realYaw - 180.0F;
       float idealPitch = 75.5F;
-      float currentPitch = this.rots.getY();
-      this.correctRotation.set(yaw, idealPitch);
+      float currentPitch = this.correctRotation.getY();
 
       this.aimBranch = "ideal-75.5";
       if (this.isRotationValidForPlacement(new Vector2f(yaw, idealPitch))) {
@@ -839,7 +833,7 @@ public class Scaffold extends Module {
       }
 
       for (float yawOffset = 0.0F; yawOffset < 180.0F; yawOffset++) {
-         float currentPitch = this.rots.getY();
+         float currentPitch = this.correctRotation.getY();
          for (float pitchOffset = 0.0F; pitchOffset < 25.0F; pitchOffset++) {
             for (int i = 0; i < 2; i++) {
                float testPitch = Mth.clamp(currentPitch - pitchOffset * (i == 0 ? 1.0F : -1.0F), -90.0F, 90.0F);
@@ -862,21 +856,12 @@ public class Scaffold extends Module {
          return;
       }
 
+      this.correctRotation.set(yaw, pitch);
       float speed = this.rotationSpeed.getCurrentValue();
-
-      float targetYaw = yaw;
-      float targetPitch = pitch;
-      if (speed < 360.0F) {
-         Vector2f smoothed = this.rotSmoother.tick(this.rots, new Vector2f(targetYaw, targetPitch), speed);
-         targetYaw = smoothed.getX();
-         targetPitch = smoothed.getY();
-      }
-
-      Vector2f quantized = RotationSmoother.patchConstantRotation(new Vector2f(targetYaw, targetPitch), this.lastSentRot);
-      targetYaw = quantized.getX();
-      targetPitch = quantized.getY();
-
-      Vector2f result = new Vector2f(targetYaw, targetPitch);
+      float nextYaw = RotationUtils.rotateToYaw(speed, this.rots.getX(), this.correctRotation.getX());
+      float nextPitch = RotationUtils.updateRotation(this.rots.getY(), this.correctRotation.getY(), speed);
+      Vector2f quantized = RotationSmoother.patchConstantRotation(new Vector2f(nextYaw, nextPitch), this.lastSentRot);
+      Vector2f result = new Vector2f(quantized.getX(), quantized.getY());
       this.logLargeDelta(result);
       this.rots.set(result.getX(), result.getY());
    }
@@ -921,8 +906,27 @@ public class Scaffold extends Module {
       }
    }
 
+   private boolean placeDelayBlocked() {
+      if (mc.player == null || !this.mode.isCurrentMode("Telly Bridge")) {
+         return false;
+      }
+
+      int placeDelay = (int)this.tellyPlaceDelay.getCurrentValue();
+      return placeDelay > 0 && mc.player.tickCount - this.lastPlaceTick < placeDelay;
+   }
+
+   private void markPlaced() {
+      if (mc.player != null) {
+         this.lastPlaceTick = mc.player.tickCount;
+      }
+   }
+
    private void c06Place() {
       if (this.pos == null || mc.player == null || mc.gameMode == null) {
+         return;
+      }
+
+      if (this.placeDelayBlocked()) {
          return;
       }
 
@@ -967,6 +971,7 @@ public class Scaffold extends Module {
       InteractionResult result = mc.gameMode.useItemOn(mc.player, hand, hit);
       if (result == InteractionResult.SUCCESS) {
          mc.player.swing(hand);
+         this.markPlaced();
       }
 
       NetworkUtils.sendPacketNoEvent(
@@ -984,6 +989,10 @@ public class Scaffold extends Module {
 
    private void doSnap() {
       if (this.pos == null || mc.player == null || mc.gameMode == null) {
+         return;
+      }
+
+      if (this.placeDelayBlocked()) {
          return;
       }
 
@@ -1036,10 +1045,15 @@ public class Scaffold extends Module {
          return;
       }
 
-      BlockHitResult hit = new BlockHitResult(getHitVec(this.pos.position(), facing), facing, this.pos.position(), false);
-      InteractionResult result = mc.gameMode.useItemOn(mc.player, hand, hit);
+      BlockHitResult position = RayTraceUtils.getFacedBlock(this.rots.getX(), this.rots.getY());
+      if (position == null) {
+         return;
+      }
+
+      InteractionResult result = mc.gameMode.useItemOn(mc.player, hand, position);
       if (result == InteractionResult.SUCCESS) {
          mc.player.swing(hand);
+         this.markPlaced();
       }
    }
 
@@ -1062,6 +1076,10 @@ public class Scaffold extends Module {
          return;
       }
 
+      if (this.placeDelayBlocked()) {
+         return;
+      }
+
       Direction sbFace = this.pos.facing();
       boolean isHoldingJump = InputConstants.isKeyDown(mc.getWindow(), mc.options.keyJump.getKey().getValue());
       if (sbFace != null
@@ -1079,6 +1097,7 @@ public class Scaffold extends Module {
             );
          if (result == InteractionResult.SUCCESS) {
             mc.player.swing(InteractionHand.MAIN_HAND);
+            this.markPlaced();
             this.pos = null;
          }
       }
@@ -1122,48 +1141,6 @@ public class Scaffold extends Module {
    }
 
    private static final class RotationSmoother {
-      private static final double TURN_RATIO = 0.5;
-      private static final double RESP_UP = 0.8;
-      private static final double RESP_DOWN = 0.4;
-      private static final double WOBBLE = 0.2;
-      private final Random random;
-      private double velYaw;
-      private double velPitch;
-
-      private RotationSmoother(Random random) {
-         this.random = random;
-      }
-
-      private Vector2f tick(Vector2f from, Vector2f to, double speed) {
-         float yaw = from.getX() + (float)this.smoothAxisDelta(Mth.wrapDegrees(to.getX() - from.getX()), speed, true);
-         float pitch = Mth.clamp(
-            from.getY() + (float)this.smoothAxisDelta(to.getY() - from.getY(), speed, false), -90.0F, 90.0F
-         );
-         return new Vector2f(yaw, pitch);
-      }
-
-      private double smoothAxisDelta(double delta, double speed, boolean yawAxis) {
-         double dist = Math.abs(delta);
-         double targetVel = Math.max(speed, dist * 0.5);
-         double prevVel = yawAxis ? this.velYaw : this.velPitch;
-         double resp = prevVel < targetVel ? 0.8 : 0.4;
-         double vel = prevVel + (targetVel - prevVel) * resp;
-         vel *= 1.0 + (this.random.nextDouble() * 2.0 - 1.0) * 0.2;
-         vel = Math.min(vel, dist);
-         if (yawAxis) {
-            this.velYaw = vel;
-         } else {
-            this.velPitch = vel;
-         }
-
-         return delta < 0.0 ? -vel : vel;
-      }
-
-      private void reset() {
-         this.velYaw = 0.0;
-         this.velPitch = 0.0;
-      }
-
       private static double sensitivityStep() {
          double sensitivity = mc.options.sensitivity().get().floatValue() * 0.6 + 0.2;
          return sensitivity * sensitivity * sensitivity * 8.0 * 0.15;
