@@ -47,14 +47,12 @@ public class NoSlow extends Module { //sh1t
    public void onEnable() {
       this.fullMode.onEnable();
       this.legacyMode.onEnable();
-      this.setSuffix(null);
    }
 
    @Override
    public void onDisable() {
       this.fullMode.onDisable();
       this.legacyMode.onDisable();
-      this.setSuffix(null);
    }
 
    @EventTarget
@@ -65,26 +63,16 @@ public class NoSlow extends Module { //sh1t
 
       if (this.fullMode.isActive()) {
          this.fullMode.onPreTick();
-         if (this.fullMode.isActive()) {
-            this.setSuffix(this.fullMode.getStepName());
-         } else if (this.getSuffix() != null) {
-            this.setSuffix(null);
-         }
-
          return;
       }
 
       if (!this.legacyMode.isActive()) {
          this.fullMode.onPreTick();
          if (this.fullMode.isActive()) {
-            this.setSuffix(this.fullMode.getStepName());
             return;
          }
       }
 
-      if (this.getSuffix() != null) {
-         this.setSuffix(null);
-      }
    }
 
    @EventTarget
